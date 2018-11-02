@@ -1,17 +1,40 @@
-"""
-	This program is a news classifier. Given a news dataset, 
+"""	
+This program is a news classifier. Given a news dataset, 
 	the program train a neural network to predict if that 
 	news is a fake news or a real news. 
 """
 
 import pandas as pd 											#used to manipulate files
 import matplotlib.pyplot as plt
+import glob
+import chardet
+import csv
+import io
+import random
+import numpy as np
+
 from sklearn import metrics 
 from sklearn.feature_extraction.text import CountVectorizer		# used to vectorize the sentences
 from sklearn.model_selection import train_test_split			# used to split the training and test set
 from sklearn.linear_model import LogisticRegression				# used to logistic regression
 from keras.models import Sequential
 from keras import layers
+
+def print_metrics(model, X, y):
+	y_pred = []
+	y_true = []
+	pred = model.predict(X)
+
+	for i in range(len(pred)):
+		y_pred.append(round(pred[i][0]))
+		y_true.append(y[i])
+		
+	print("Confusion matrix")
+	print(pd.DataFrame(metrics.confusion_matrix(y_true, y_pred, labels=[1, 0]), index=['true:fake', 'true:real'], columns=['pred:fake', 'pred:real']))
+	print("Accuracy:", metrics.accuracy_score(y_true, y_pred))
+	print("Precision:", metrics.precision_score(y_true, y_pred))
+	print("Recall:", metrics.recall_score(y_true, y_pred))
+	print("F1 score:", metrics.f1_score(y_true, y_pred))
 
 def plot_history(history, base):
     acc = history.history['acc']
@@ -57,6 +80,18 @@ def lr_classifier(df):
 		for i in range(len(sentences_test)):
 			sentences_test[i] = str(sentences_test[i])
 
+		if source == 'brnews':
+			for i in range(len(y_train)):
+				if y_train[i] == "0":
+					y_train[i] = 0
+				else:
+					y_train[i] = 1
+			for i in range(len(y_test)):
+				if y_test[i] == "0":
+					y_test[i] = 0
+				else:
+					y_test[i] = 1
+
 		vectorizer.fit(sentences_train)
 
 		X_train = vectorizer.transform(sentences_train)
@@ -93,14 +128,14 @@ def ann_classifier(df):
 		for i in range(len(sentences_test)):
 			sentences_test[i] = str(sentences_test[i])
 
-		if source == 'george':
+		if source == 'brnews':
 			for i in range(len(y_train)):
-				if y_train[i] == "REAL":
+				if y_train[i] == "0":
 					y_train[i] = 0
 				else:
 					y_train[i] = 1
 			for i in range(len(y_test)):
-				if y_test[i] == "REAL":
+				if y_test[i] == "0":
 					y_test[i] = 0
 				else:
 					y_test[i] = 1
@@ -110,31 +145,36 @@ def ann_classifier(df):
 		X_train = vectorizer.transform(sentences_train)
 		X_test = vectorizer.transform(sentences_test)
 
-
 		input_dim = X_train.shape[1]
 		model = Sequential()
-		model.add(layers.Dense(10, input_dim=input_dim, activation='relu'))
+		model.add(layers.Dense(30, input_dim=input_dim, activation='relu'))
+		model.add(layers.Dense(30, activation='relu'))
 		model.add(layers.Dense(1, activation='sigmoid'))
 		model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 		model.summary()
-		history = model.fit(X_train, y_train, epochs=20, verbose=False,
+		history = model.fit(X_train, y_train, epochs=2, verbose=True,
 							validation_data=(X_test, y_test), batch_size = 10)
-		loss, accuracy = model.evaluate(X_train, y_train, verbose=False)
-		print("Training Accuracy: {:.4f}".format(accuracy))
 		loss, accuracy = model.evaluate(X_test, y_test, verbose=False)
+		print(model.metrics_names)
 		print("Test Accuracy: {:.4f}".format(accuracy))
-		plot_history(history, source)
+		print(print_metrics(model, X_test, y_test))
 
+#filepath_dict = {'kaggle': 'data/fake-news/data1.csv', 'george': 'data/fake-news/data2.csv'}
+filepath = 'data/br-fake-news/fake/brfake.txt'
 
-filepath_dict = {'kaggle': 'data/fake-news/data1.csv', 'george': 'data/fake-news/data2.csv'}
+filepath_dict1 = {'brnews': 'data/br-fake-news/preprocessed/brnews.csv'}
+filepath_dict2 = {'brnews': 'data/br-fake-news/brnews.txt'}
 
 df_list = []
-# read all the datasets and save in a list. The columns are (sentence, label, source)
-for source, filepath in filepath_dict.items():
-	df = pd.read_csv(filepath, sep=',')
+stop_words = []
+
+for source, filepath in filepath_dict1.items():
+	df = pd.read_csv(filepath, sep="\t", encoding='utf-8', names=['Body', 'Label'])
 	df['source'] = source
 	df_list.append(df)
 
 # concat all the read dataset
 df = pd.concat(df_list)
+df = df.sample(frac=1)
+print(df)
 ann_classifier(df)

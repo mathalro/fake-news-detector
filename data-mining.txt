@@ -1,0 +1,9 @@
+merge notices with shell script
+
+Preprocessing
+remove strange chars “ ‘ …
+remove noise corpus
+remove links
+remove stopwords
+lemmatization
+
