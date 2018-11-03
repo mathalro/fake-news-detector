@@ -19,16 +19,25 @@ from sklearn.model_selection import train_test_split			# used to split the train
 from sklearn.linear_model import LogisticRegression				# used to logistic regression
 from keras.models import Sequential
 from keras import layers
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
 
-def print_metrics(model, X, y):
+
+"""
+	Show Confusion Matrix, Accuracy, Precision, Recal and F1 score of a model
+"""
+def print_metrics(model, X, y, lr=False):
 	y_pred = []
 	y_true = []
 	pred = model.predict(X)
 
 	for i in range(len(pred)):
-		y_pred.append(round(pred[i][0]))
+		if lr:
+			y_pred.append(round(pred[i]))
+		else:
+			y_pred.append(round(pred[i][0]))
 		y_true.append(y[i])
-		
+
 	print("Confusion matrix")
 	print(pd.DataFrame(metrics.confusion_matrix(y_true, y_pred, labels=[1, 0]), index=['true:fake', 'true:real'], columns=['pred:fake', 'pred:real']))
 	print("Accuracy:", metrics.accuracy_score(y_true, y_pred))
@@ -36,7 +45,11 @@ def print_metrics(model, X, y):
 	print("Recall:", metrics.recall_score(y_true, y_pred))
 	print("F1 score:", metrics.f1_score(y_true, y_pred))
 
-def plot_history(history, base):
+
+"""
+	Plot history of loss and accuracy of a model CV and Train
+"""
+def plot_history(history):
     acc = history.history['acc']
     val_acc = history.history['val_acc']
     loss = history.history['loss']
@@ -44,120 +57,101 @@ def plot_history(history, base):
     x = range(1, len(acc) + 1)
 
     plt.figure()
-    #plt.subplot(1, 2, 1)
-    #plt.plot(x, acc, 'b', label='Training acc')
-    #plt.plot(x, val_acc, 'r', label='Validation acc')
-    #plt.title('Training and validation accuracy')
-    #plt.legend()
-    #plt.subplot(1, 2, 2)
+    plt.subplot(1, 2, 1)
+    plt.plot(x, acc, 'b', label='Training acc')
+    plt.plot(x, val_acc, 'r', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.legend()
+    plt.subplot(1, 2, 2)
     plt.plot(x, loss, 'b', label='Training loss')
-    #plt.plot(x, val_loss, 'r', label='Validation loss')
-    plt.title('Training cost - Base '+base)
+    plt.plot(x, val_loss, 'r', label='Validation loss')
+    plt.title('Training and validation loss')
     plt.legend()
     plt.show()
 
+
 """
-	This method is used to train and test a set of sentences using logistic regression
-	The method is separated in three steps
-		1 - Divide the data in training set and test set (25% for test)
-		2 - Vectorize the sentences
-		3 - Training and test
+	Create a divided in Train and Test dataset
 """
-def lr_classifier(df):
+def train_test_ds(df):
 	for source in df['source'].unique():
 		# dividing the dataset
 		df_yelp = df[df['source'] == source]
 		sentences = df_yelp['Body'].values
 		y = df_yelp['Label'].values
-		sentences_train, sentences_test, y_train, y_test = train_test_split(
-			sentences, y, test_size=0.25, random_state=1000)
+		X_train, X_test, y_train, y_test = train_test_split(
+			sentences, y, test_size=0.30, random_state=999)
 
-		# vectorizing sentences
-		vectorizer = CountVectorizer()
+		return [X_train, X_test, y_train, y_test]
 
-		for i in range(len(sentences_train)):
-			sentences_train[i] = str(sentences_train[i])
-		for i in range(len(sentences_test)):
-			sentences_test[i] = str(sentences_test[i])
-
-		if source == 'brnews':
-			for i in range(len(y_train)):
-				if y_train[i] == "0":
-					y_train[i] = 0
-				else:
-					y_train[i] = 1
-			for i in range(len(y_test)):
-				if y_test[i] == "0":
-					y_test[i] = 0
-				else:
-					y_test[i] = 1
-
-		vectorizer.fit(sentences_train)
-
-		X_train = vectorizer.transform(sentences_train)
-		X_test = vectorizer.transform(sentences_test)
-
-		# logistic regression
-		classifier = LogisticRegression()
-		classifier.fit(X_train, y_train)
-		predictions = classifier.predict(X_train)
-		f1 = metrics.f1_score(y_train, predictions)
-		print(f1)
 
 """
-	This method is used to train and test a set of sentences using neural network
-	The method is separated in three steps
-		1 - Divide the data in training set and test set (25% for test)
-		2 - Vectorize the sentences
-		3 - Training and test
+	Logistic Regression Classifier
 """
-def ann_classifier(df):
-	for source in df['source'].unique():
-		# dividing the dataset
-		df_yelp = df[df['source'] == source]
-		sentences = df_yelp['Body'].values
-		y = df_yelp['Label'].values
-		sentences_train, sentences_test, y_train, y_test = train_test_split(
-			sentences, y, test_size=0.25, random_state=1000)
+def lr_classifier(X_train, X_test, y_train, y_test):
+	vectorizer = CountVectorizer()
+	vectorizer.fit(X_train)
 
-		# vectorizing sentences
-		vectorizer = CountVectorizer()
+	X_train = vectorizer.transform(X_train)
+	X_test = vectorizer.transform(X_test)
 
-		for i in range(len(sentences_train)):
-			sentences_train[i] = str(sentences_train[i])
-		for i in range(len(sentences_test)):
-			sentences_test[i] = str(sentences_test[i])
+	# logistic regression
+	model = LogisticRegression()
+	model.fit(X_train, y_train)
+	print_metrics(model, X_test, y_test, lr=True)
 
-		if source == 'brnews':
-			for i in range(len(y_train)):
-				if y_train[i] == "0":
-					y_train[i] = 0
-				else:
-					y_train[i] = 1
-			for i in range(len(y_test)):
-				if y_test[i] == "0":
-					y_test[i] = 0
-				else:
-					y_test[i] = 1
 
-		vectorizer.fit(sentences_train)
+"""
+	Simple Neural Network Classifier
+"""
+def ann_classifier(X_train, X_test, y_train, y_test):
+	vectorizer = CountVectorizer()
+	vectorizer.fit(X_train)
 
-		X_train = vectorizer.transform(sentences_train)
-		X_test = vectorizer.transform(sentences_test)
+	X_train = vectorizer.transform(X_train)
+	X_test = vectorizer.transform(X_test)
 
-		input_dim = X_train.shape[1]
-		model = Sequential()
-		model.add(layers.Dense(30, input_dim=input_dim, activation='relu'))
-		model.add(layers.Dense(30, activation='relu'))
-		model.add(layers.Dense(1, activation='sigmoid'))
-		model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-		model.summary()
-		history = model.fit(X_train, y_train, epochs=2, verbose=True,
-							validation_data=(X_test, y_test), batch_size = 10)
-		loss, accuracy = model.evaluate(X_test, y_test, verbose=False)
-		print(model.metrics_names)
-		print("Test Accuracy: {:.4f}".format(accuracy))
-		print(print_metrics(model, X_test, y_test))
+	input_dim = X_train.shape[1]
+	model = Sequential()
+	model.add(layers.Dense(25, input_dim=input_dim, activation='relu'))
+	model.add(layers.Dense(1, activation='sigmoid'))
+	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+	model.summary()
+	history = model.fit(X_train, y_train, epochs=3, verbose=True,
+						validation_data=(X_test, y_test), batch_size = 10)
+	loss, accuracy = model.evaluate(X_test, y_test, verbose=False)
+	print_metrics(model, X_test, y_test)
+
+
+"""
+	Convolutional neral network classifier
+"""
+def cnn_classifier(X_train, X_test, y_train, y_test):
+	tokenizer = Tokenizer()
+	tokenizer.fit_on_texts(X_train)
+
+	X_train = tokenizer.texts_to_sequences(X_train)
+	X_test = tokenizer.texts_to_sequences(X_test)
+
+	vocab_size = len(tokenizer.word_index) + 1
+	maxlen = 300
+	embedding_dim = 20
+
+	X_train = pad_sequences(X_train, padding='post', truncating='post', maxlen=maxlen)
+	X_test = pad_sequences(X_test, padding='post', truncating='post', maxlen=maxlen)
+
+	model = Sequential()
+	model.add(layers.Embedding(input_dim=vocab_size, output_dim=embedding_dim, input_length=maxlen))
+	model.add(layers.Conv1D(10, kernel_size=5, activation='relu'))
+	model.add(layers.MaxPooling1D())
+	model.add(layers.Flatten())
+	model.add(layers.Dense(10, activation='relu'))
+	model.add(layers.Dense(1, activation='sigmoid'))
+	model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+	model.summary()
+	history = model.fit(X_train, y_train, epochs=3, verbose=True, validation_data=(X_test, y_test), batch_size=10)
+	print_metrics(model, X_test, y_test)
+
 
 #filepath_dict = {'kaggle': 'data/fake-news/data1.csv', 'george': 'data/fake-news/data2.csv'}
 filepath = 'data/br-fake-news/fake/brfake.txt'
@@ -168,13 +162,16 @@ filepath_dict2 = {'brnews': 'data/br-fake-news/brnews.txt'}
 df_list = []
 stop_words = []
 
-for source, filepath in filepath_dict1.items():
-	df = pd.read_csv(filepath, sep="\t", encoding='utf-8', names=['Body', 'Label'])
+for source, filepath in filepath_dict2.items():
+	df = pd.read_csv(filepath, sep="\t", encoding='utf-8')
 	df['source'] = source
 	df_list.append(df)
 
 # concat all the read dataset
 df = pd.concat(df_list)
-df = df.sample(frac=1)
-print(df)
-ann_classifier(df)
+#print(df)
+data = train_test_ds(df)
+
+lr_classifier(data[0], data[1], data[2], data[3])
+ann_classifier(data[0], data[1], data[2], data[3])
+cnn_classifier(data[0], data[1], data[2], data[3])

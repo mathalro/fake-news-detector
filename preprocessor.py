@@ -11,12 +11,14 @@ import nltk
 from nltk.stem import RSLPStemmer
 from collections import defaultdict
 
+
 def rem_noise(text):
 	# removing noise characters
 	text = re.sub('[0-9\[\](){}=.,:;+?/!\*<>_\-§%\$\'\"]', '', text)
 	# removing urls
 	text = re.sub('(www|http)\S+', '', text)
 	return text
+
 
 """
 	Read the stopwords file and remove them from the news
@@ -37,9 +39,10 @@ def cleanning(data):
 			for j, w in enumerate(words):
 				if (w.lower() == s):
 					words.pop(j)
-		data[i] = " ".join(words)
+		data[i] = " ".join(words[:100])
 
 	return np.asarray(data)
+
 
 def stemming(tokens):
 	stemmer = RSLPStemmer()
@@ -47,6 +50,7 @@ def stemming(tokens):
 	for word in tokens:
 		result.append(stemmer.stem(word.lower()))
 	return result
+
 
 """
 	Remove the words that occurs less than 10 times in all the news (rare words not differenciate two news)
@@ -74,6 +78,7 @@ rfilepath = 'data/br-fake-news/brnews.txt'
 wfilepath = 'data/br-fake-news/preprocessed/brnews.csv'
 
 df = pd.read_csv(rfilepath, sep="\t", encoding='utf-8', names=['Body', 'Label'])
+
 new_df = pd.DataFrame({'Body': cleanning(df['Body'].values), 'Label': df['Label'].values})
 new_df = pd.DataFrame({'Body': rem_lowfreq(df['Body'].values), 'Label': df['Label'].values})
 new_df.to_csv(wfilepath, sep='\t', encoding='utf-8', quoting=csv.QUOTE_NONE, index=False)
