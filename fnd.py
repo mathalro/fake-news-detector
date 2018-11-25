@@ -38,12 +38,13 @@ def print_metrics(model, X, y, lr=False):
 			y_pred.append(round(pred[i][0]))
 		y_true.append(y[i])
 
-	print("Confusion matrix")
+	print("Confusion matrix:")
 	print(pd.DataFrame(metrics.confusion_matrix(y_true, y_pred, labels=[1, 0]), index=['true:fake', 'true:real'], columns=['pred:fake', 'pred:real']))
-	print("Accuracy:", metrics.accuracy_score(y_true, y_pred))
+	print("\nAccuracy:", metrics.accuracy_score(y_true, y_pred))
 	print("Precision:", metrics.precision_score(y_true, y_pred))
 	print("Recall:", metrics.recall_score(y_true, y_pred))
 	print("F1 score:", metrics.f1_score(y_true, y_pred))
+	print("\n==================================================================================\n\n")
 
 
 """
@@ -102,7 +103,6 @@ def lr_classifier(X_train, X_test, y_train, y_test):
 	model.fit(X_train, y_train)
 	print("\n\nLOGISTIC REGRESSION RESULTS\n")
 	print_metrics(model, X_test, y_test, lr=True)
-	print("==================================================================================\n\n")
 
 """
 	Simple Neural Network Classifier
@@ -126,7 +126,6 @@ def ann_classifier(X_train, X_test, y_train, y_test):
 	print("\n\nRNA RESULTS\n")
 	print_metrics(model, X_test, y_test)
 	#plot_history(history, "Common Neural Network")
-	print("==================================================================================\n\n")
 
 
 """
@@ -159,7 +158,6 @@ def cnn_classifier(X_train, X_test, y_train, y_test):
 	print("\n\nCNN RESULTS\n")
 	print_metrics(model, X_test, y_test)
 	#plot_history(history, "Common Neural Network")
-	print("==================================================================================\n")
 
 
 #filepath_dict = {'kaggle': 'data/fake-news/data1.csv', 'george': 'data/fake-news/data2.csv'}
