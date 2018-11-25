@@ -49,7 +49,7 @@ def print_metrics(model, X, y, lr=False):
 """
 	Plot history of loss and accuracy of a model CV and Train
 """
-def plot_history(history):
+def plot_history(history, title):
     acc = history.history['acc']
     val_acc = history.history['val_acc']
     loss = history.history['loss']
@@ -57,6 +57,7 @@ def plot_history(history):
     x = range(1, len(acc) + 1)
 
     plt.figure()
+    plt.title(title)
     plt.subplot(1, 2, 1)
     plt.plot(x, acc, 'b', label='Training acc')
     plt.plot(x, val_acc, 'r', label='Validation acc')
@@ -89,6 +90,7 @@ def train_test_ds(df):
 	Logistic Regression Classifier
 """
 def lr_classifier(X_train, X_test, y_train, y_test):
+
 	vectorizer = CountVectorizer()
 	vectorizer.fit(X_train)
 
@@ -98,8 +100,9 @@ def lr_classifier(X_train, X_test, y_train, y_test):
 	# logistic regression
 	model = LogisticRegression()
 	model.fit(X_train, y_train)
+	print("\n\nLOGISTIC REGRESSION RESULTS\n")
 	print_metrics(model, X_test, y_test, lr=True)
-
+	print("==================================================================================\n\n")
 
 """
 	Simple Neural Network Classifier
@@ -120,7 +123,10 @@ def ann_classifier(X_train, X_test, y_train, y_test):
 	history = model.fit(X_train, y_train, epochs=3, verbose=True,
 						validation_data=(X_test, y_test), batch_size = 10)
 	loss, accuracy = model.evaluate(X_test, y_test, verbose=False)
+	print("\n\nRNA RESULTS\n")
 	print_metrics(model, X_test, y_test)
+	#plot_history(history, "Common Neural Network")
+	print("==================================================================================\n\n")
 
 
 """
@@ -143,14 +149,17 @@ def cnn_classifier(X_train, X_test, y_train, y_test):
 	model = Sequential()
 	model.add(layers.Embedding(input_dim=vocab_size, output_dim=embedding_dim, input_length=maxlen))
 	model.add(layers.Conv1D(10, kernel_size=5, activation='relu'))
-	model.add(layers.MaxPooling1D())
+	model.add(layers.MaxPool1D())
 	model.add(layers.Flatten())
 	model.add(layers.Dense(10, activation='relu'))
 	model.add(layers.Dense(1, activation='sigmoid'))
 	model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 	model.summary()
 	history = model.fit(X_train, y_train, epochs=3, verbose=True, validation_data=(X_test, y_test), batch_size=10)
+	print("\n\nCNN RESULTS\n")
 	print_metrics(model, X_test, y_test)
+	#plot_history(history, "Common Neural Network")
+	print("==================================================================================\n")
 
 
 #filepath_dict = {'kaggle': 'data/fake-news/data1.csv', 'george': 'data/fake-news/data2.csv'}
